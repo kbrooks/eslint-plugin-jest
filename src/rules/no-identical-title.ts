@@ -8,13 +8,13 @@ import {
 } from './utils';
 
 interface DescribeContext {
-  describeTitles: string[];
-  testTitles: string[];
+  describeTitles: Set<string>;
+  testTitles: Set<string>;
 }
 
 const newDescribeContext = (): DescribeContext => ({
-  describeTitles: [],
-  testTitles: [],
+  describeTitles: new Set(),
+  testTitles: new Set(),
 });
 
 export default createRule({
@@ -65,25 +65,27 @@ export default createRule({
         const title = getStringValue(argument);
 
         if (jestFnCall.type === 'test') {
-          if (currentLayer.testTitles.includes(title)) {
+          if (currentLayer.testTitles.has(title)) {
             context.report({
               messageId: 'multipleTestTitle',
               node: argument,
             });
+          } else {
+            currentLayer.testTitles.add(title);
           }
-          currentLayer.testTitles.push(title);
         }
 
         if (jestFnCall.type !== 'describe') {
           return;
         }
-        if (currentLayer.describeTitles.includes(title)) {
+        if (currentLayer.describeTitles.has(title)) {
           context.report({
             messageId: 'multipleDescribeTitle',
             node: argument,
           });
+        } else {
+          currentLayer.describeTitles.add(title);
         }
-        currentLayer.describeTitles.push(title);
       },
       'CallExpression:exit'(node) {
         if (isTypeOfJestFnCall(node, context, ['describe'])) {
